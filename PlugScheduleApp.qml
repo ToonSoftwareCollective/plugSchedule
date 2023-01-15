@@ -9,13 +9,13 @@ import FileIO 1.0
 
 App {
 	id: pumpSwitchApp
-	property bool 		debugOutput: true
+
 	property url 		tileUrl : "PlugScheduleTile.qml"
 	property 			PlugScheduleTile plugScheduleTile
 	property url 		plugScheduleScreenUrl : "PlugScheduleScreen.qml"
 	property			PlugScheduleScreen  plugScheduleScreen
 	
-	property url 		thumbnailIcon: "qrc:/tsc/refresh.png"
+	property url 		thumbnailIcon: "qrc:/tsc/GroupOn.png"
 
 	property variant scheduleJson: {}
 	property variant switchUuidArray : []
@@ -60,7 +60,7 @@ App {
 
 
 	function init() {
-		registry.registerWidget("tile", tileUrl, this, "plugScheduleTile", {thumbLabel: qsTr("plugSchedule"), thumbIcon: thumbnailIcon, thumbCategory: "general", thumbWeight: 30, baseTileWeight: 10, baseTileSolarWeight: 10, thumbIconVAlignment: "center"})
+		registry.registerWidget("tile", tileUrl, this, "plugScheduleTile", {thumbLabel: qsTr("Slimme stekkers"), thumbIcon: thumbnailIcon, thumbCategory: "general", thumbWeight: 30, baseTileWeight: 10, baseTileSolarWeight: 10, thumbIconVAlignment: "center"})
 		registry.registerWidget("screen", plugScheduleScreenUrl, this, "plugScheduleScreen")
 	}
 	
@@ -102,10 +102,10 @@ App {
 			}
 		}
 
-		console.log("****** plugScheduleSwithTimes in seconds from now");
-		console.log(switchActionArray);
-		console.log(switchUuidArray);
-		console.log(switchInterval);
+//		console.log("****** plugScheduleSwithTimes in seconds from now");
+//		console.log(switchActionArray);
+//		console.log(switchUuidArray);
+//		console.log(switchInterval);
 
 			// find lowest switch time in array
 
@@ -146,13 +146,12 @@ App {
 			nextSwitchTime = hours + ":" + minutes;
 			message = "Volgende aktie op:";
 
-			console.log("***** plugTimer started (ms):" + (currentSwitchInterval * 1000) + " at " + nextSwitchDate + " " + nextSwitchTime);
+			console.log("***** Slimme stekker programma gestart:" + (currentSwitchInterval * 1000)  + " ms tot " + nextSwitchDate + " " + nextSwitchTime);
 		}
 	}
 
 	function actionPlugTimer() {
 
-		console.log("***** plug fired from " + currentSwitchInterval );
 			// execute action for the plug(s) at this time
 
 		for (var i=0;i<switchInterval.length;i++) {
@@ -162,6 +161,7 @@ App {
 				msg.addArgument("NewTargetValue", switchActionArray[i]);
 				bxtClient.sendMsg(msg);
 				bxtClient.sendMsg(msg); // do it twice because sometimes the plug does not respond
+				console.log("***** slimme stekkerplug " +  switchUuidArray[i] + "gewijzigd naar " + switchActionArray[i]);
 
 			}
 		}
