@@ -21,7 +21,12 @@ App {
 	property variant switchUuidArray : []
 	property variant switchActionArray : []
 	property variant switchInterval : []
+	property variant switchPlugName : []
+	property variant plugNamesArray : []
+	property variant plugUuidArray : []
 	property variant currentSwitchInterval : 0
+	property string currentSwitchAction
+	property string currentSwitchName
 	property string nextSwitchDate
 	property string nextSwitchTime
 	property string message
@@ -31,7 +36,7 @@ App {
 	property variant newScheduleItem : {
 				"pluguuid":"-",
 				"starttime":900,
-				"endtime":1000,
+				"action":"Aan",
 				"active":0,
 				"mo":1,
 				"tu":1,
@@ -95,6 +100,8 @@ App {
 		switchActionArray.length = 0;
 		switchUuidArray.length = 0;
 		switchInterval.length = 0;
+		currentSwitchName = "";
+		currentSwitchAction = "";
 
 		for (var i=0;i<scheduleJson["scheduleitems"].length;i++) {			
 			if (scheduleJson["scheduleitems"][i]["active"] == 1) {
@@ -102,10 +109,10 @@ App {
 			}
 		}
 
-//		console.log("****** plugScheduleSwithTimes in seconds from now");
-//		console.log(switchActionArray);
-//		console.log(switchUuidArray);
-//		console.log(switchInterval);
+		console.log("****** plugScheduleSwithTimes in seconds from now");
+		console.log(switchActionArray);
+		console.log(switchUuidArray);
+		console.log(switchInterval);
 
 			// find lowest switch time in array
 
@@ -113,6 +120,12 @@ App {
 		for (var i=0;i<switchInterval.length;i++) {
 			if (switchInterval[i] < currentSwitchInterval ) {
 				currentSwitchInterval = switchInterval[i];
+				currentSwitchName = getName(switchUuidArray[i]);
+				if (switchActionArray[i] == "1") {
+					currentSwitchAction = "Aan"
+				} else {
+					currentSwitchAction = "Uit"
+				}
 			}
 		}
 
@@ -127,7 +140,7 @@ App {
 			} else { 
 				nextSwitchDate = "--/--/--";
 				nextSwitchTime = "--:--";
-				message = "Volgende aktie op:";
+				message = "Eerstvolgende actie op:";
 			}
 		} else {
 			plugTimer.interval = currentSwitchInterval * 1000;
@@ -140,11 +153,9 @@ App {
 			if (hours < 10) hours = "0" + hours;
 			var month = nextSwitchEvent.getMonth() + 1;
 			if (month < 10) month = "0" + month;
-			var hours = nextSwitchEvent.getHours();
-			if (hours < 10) hours = "0" + hours;
-			nextSwitchDate = nextSwitchEvent.getDate() + "/" + month;
+			nextSwitchDate = nextSwitchEvent.getDate() + "/" + month + "/" + nextSwitchEvent.getFullYear();
 			nextSwitchTime = hours + ":" + minutes;
-			message = "Volgende aktie op:";
+			message = "Eerstvolgende actie op:";
 
 			console.log("***** Slimme stekker programma gestart:" + (currentSwitchInterval * 1000)  + " ms tot " + nextSwitchDate + " " + nextSwitchTime);
 		}
@@ -201,33 +212,13 @@ App {
 
 		for (var j=0;j<7;j++) {
 			if (scheduleJson["scheduleitems"][index][decodeDay((startday + j) % 7)] == 1) {
-				switchActionArray.push("1");
+				if (scheduleJson["scheduleitems"][index]["action"] == "Aan") {
+					switchActionArray.push("1");
+				} else {
+					switchActionArray.push("0");
+				}
 				switchUuidArray.push(scheduleJson["scheduleitems"][index]["pluguuid"]);
 				switchInterval.push(switchOnInterval + (j * 86400));
-				break;
-			}
-		}
-
-			// store plug stop moments
-
-		jsonTime = scheduleJson["scheduleitems"][index]["endtime"] / 100;
-		jsonHours = Math.floor(jsonTime);
-		jsonMinutes = (-jsonHours * 100) + scheduleJson["scheduleitems"][index]["endtime"];
-		switchOffInterval = -nowSeconds + (jsonMinutes * 60) + (jsonHours  * 3600);
-
-		if (switchOffInterval > 0) {
-			startday = nowDayOfWeek;
-		} else {
-			startday = nowDayOfWeek + 1;
-			if (startday == 7) startday = 0;
-			switchOffInterval = switchOffInterval + 86400;
-		}
-
-		for (var j=0;j<7;j++) {
-			if (scheduleJson["scheduleitems"][index][decodeDay((startday + j) % 7)] == 1) {
-				switchActionArray.push("0");
-				switchUuidArray.push(scheduleJson["scheduleitems"][index]["pluguuid"]);
-				switchInterval.push(switchOffInterval + (j * 86400));
 				break;
 			}
 		}
@@ -236,6 +227,8 @@ App {
 	function countPlugs(){
 	
 		plugsfound=false
+		plugNamesArray.length = 0; //empty arrays (refresh plug list)
+		plugUuidArray.length = 0;
 		var doc = new XMLHttpRequest();
 		doc.onreadystatechange = function() {
 			if (doc.readyState == XMLHttpRequest.DONE) {
@@ -243,6 +236,17 @@ App {
 				var devices = devicesfile.split('<device>')
 				for(var x0 = 0;x0 < devices.length;x0++){
 					if((devices[x0].toUpperCase().indexOf('PUMP')>0 & devices[x0].toUpperCase().indexOf('SWITCH')>0) || devices[x0].indexOf('FGWPF102')>0 || devices[x0].indexOf('ZMNHYD1')>0 ||devices[x0].indexOf('FGWP011')>0 ||devices[x0].indexOf('NAS_WR01Z')>0 ||devices[x0].indexOf('NAS_WR01ZE')>0 ||devices[x0].indexOf('NAS_WR02ZE')>0 ||devices[x0].indexOf('EMPOWER')>0 ||devices[x0].indexOf('EM6550_v1')>0) {
+						var n20 = devices[x0].indexOf('<uuid>') + 6
+						var n21 = devices[x0].indexOf('</uuid>',n20)
+						var devicesuuid = devices[x0].substring(n20, n21)
+						
+						var n40 = devices[x0].indexOf('<name>') + 6
+						var n41 = devices[x0].indexOf('</name>',n40)
+						var devicesname = devices[x0].substring(n40, n41)
+
+						plugNamesArray.push(devicesname.trim());
+						plugUuidArray.push(devicesuuid.trim());
+
 						plugsfound=true;
 						determineFirstSwitchmoment();
 					}
@@ -252,6 +256,18 @@ App {
 		doc.open("GET", "file:////qmf/config/config_happ_smartplug.xml", true);
 		doc.setRequestHeader("Content-Encoding", "UTF-8");
 		doc.send();
+	}
+
+	function getName(pluguuid){
+		if (plugUuidArray.length > 0) {
+			for (var i=0; i<plugUuidArray.length; i++) {
+				if (plugUuidArray[i]== pluguuid) {
+					return plugNamesArray[i];
+					break;
+				}
+			}
+		}
+		return "Onbekend"
 	}
 
 	

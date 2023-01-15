@@ -40,9 +40,9 @@ Tile {
 		color: (typeof dimmableColors !== 'undefined') ? dimmableColors.waTileTextColor : colors.waTileTextColor
 		text: app.message
 	}
-	
+
 	Text {
-		id: txtDate
+		id: txtDateTime
 		anchors {
 			top: txtTitle2.bottom
 			topMargin: isNxt ? 20 : 16
@@ -50,23 +50,24 @@ Tile {
 		}
 		font {
 			family: qfont.regular.name
-			pixelSize: qfont.tileTitle2
+			pixelSize: qfont.tileTitle
 		}
 		color: (typeof dimmableColors !== 'undefined') ? dimmableColors.waTileTextColor : colors.waTileTextColor
-		text: app.nextSwitchDate
+		text: app.nextSwitchDate + " " + app.nextSwitchTime
 	}
 	
 	Text {
-		id: txtTime
+		id: currentSwitchName
 		anchors {
-			top: txtDate.bottom
+			top: txtDateTime.bottom
+			topMargin: isNxt ? 10 : 8
 			horizontalCenter: parent.horizontalCenter
 		}
 		font {
 			family: qfont.regular.name
-			pixelSize: qfont.tileTitle2
+			pixelSize: qfont.tileTitle
 		}
 		color: (typeof dimmableColors !== 'undefined') ? dimmableColors.waTileTextColor : colors.waTileTextColor
-		text: app.nextSwitchTime
+		text: app.currentSwitchName + " - " + app.currentSwitchAction
 	}
 }

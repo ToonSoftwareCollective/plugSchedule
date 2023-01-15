@@ -108,7 +108,7 @@ Screen {
 		}
 		Text {
 			id: heading2
-			text: "Aan"
+			text: "Tijd"
 			width: isNxt ? 100:80
 			font.pixelSize: isNxt ? 35:28
 			font.family: qfont.bold.name
@@ -120,7 +120,7 @@ Screen {
 		}
 		Text {
 			id: heading3
-			text: "Uit"
+			text: "Wat"
 			width: isNxt ? 100:80
 			font.family: qfont.bold.name
 			font.pixelSize: isNxt ? 35:28
@@ -244,13 +244,6 @@ Screen {
 					}
 				}
 
-				function saveEndTime(text) {
-					if (text) {
-						app.scheduleJson["scheduleitems"][index]["endtime"] = parseInt(text);
-						app.saveSchedule();
-						loadScreen();
-					}
-				}
 				function formatTime(numtime) {
 					var strTime = "0000"+ numtime;
 					strTime = strTime.slice(-4);
@@ -323,8 +316,8 @@ Screen {
 					}
 				}
 				Text {
-					id: endtimelabel
-					text: formatTime(endtime)
+					id: actionlabel
+					text: action
 					width: isNxt ? 100:80
 					font.family: (active == 1) ? qfont.bold.name : qfont.regular.name
 					font.pixelSize: isNxt ? 35:28
@@ -336,7 +329,13 @@ Screen {
 					MouseArea {
 						anchors.fill: parent
 						onClicked: {
-							qkeyboard.open("Voer eindtijd in (HHMM)", endtimelabel.text.substring(0,2) + endtimelabel.text.substring(3,5), saveEndTime)
+							if (action == "Aan") {
+								app.scheduleJson["scheduleitems"][index]["action"] = "Uit"
+							} else {
+								app.scheduleJson["scheduleitems"][index]["action"] = "Aan"
+							}
+							app.saveSchedule();
+							loadScreen();
 						}
 					}
 				}
@@ -348,7 +347,7 @@ Screen {
 					font.pixelSize: isNxt ? 35:28
 					anchors {
 						leftMargin: isNxt ? 12 : 9
-						left: endtimelabel.right
+						left: actionlabel.right
 					}
 
 					MouseArea {
