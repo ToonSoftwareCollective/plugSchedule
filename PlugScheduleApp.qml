@@ -22,8 +22,6 @@ App {
 	property variant switchActionArray : []
 	property variant switchInterval : []
 	property variant switchPlugName : []
-	property variant plugNamesArray : []
-	property variant plugUuidArray : []
 	property variant currentSwitchInterval : 0
 	property string currentSwitchAction
 	property string currentSwitchName
@@ -97,6 +95,15 @@ App {
 
 			// calculate next switch times for each active row in the JSON (can be multiple switches at the same time)
 		
+		plugTimer.stop();
+		countPlugs();
+	}
+	
+	function determineFirstSwitchmomentDetails() {
+
+			// calculate next switch times for each active row in the JSON (can be multiple switches at the same time)
+		
+		plugTimer.stop();
 		switchActionArray.length = 0;
 		switchUuidArray.length = 0;
 		switchInterval.length = 0;
@@ -109,39 +116,28 @@ App {
 			}
 		}
 
-		console.log("****** plugScheduleSwithTimes in seconds from now");
-		console.log(switchActionArray);
-		console.log(switchUuidArray);
-		console.log(switchInterval);
-
 			// find lowest switch time in array
 
 		currentSwitchInterval  = 9999999999
 		for (var i=0;i<switchInterval.length;i++) {
 			if (switchInterval[i] < currentSwitchInterval ) {
 				currentSwitchInterval = switchInterval[i];
-				currentSwitchName = getName(switchUuidArray[i]);
-				if (switchActionArray[i] == "1") {
-					currentSwitchAction = "Aan"
-				} else {
-					currentSwitchAction = "Uit"
+				getName(switchUuidArray[i]);
+				if (plugsfound) {
+					if (switchActionArray[i] == "1") {
+						currentSwitchAction = "Aan"
+					} else {
+						currentSwitchAction = "Uit"
+					}
 				}
 			}
 		}
 
 		if (currentSwitchInterval == 9999999999) {
 			// no switch time detected, do nothing, wait for manual screen update
-			plugTimer.stop();
-			console.log("***** plugTimer stopped");
-			if (!plugsfound) {
-				nextSwitchDate = "Geen slimme stekkers"; 
-				nextSwitchTime = "gekoppeld aan Toon";
-				message = "Probleem:"
-			} else { 
-				nextSwitchDate = "--/--/--";
-				nextSwitchTime = "--:--";
-				message = "Eerstvolgende actie op:";
-			}
+			nextSwitchDate = "--/--/--";
+			nextSwitchTime = "--:--";
+			message = "Eerstvolgende actie op:";
 		} else {
 			plugTimer.interval = currentSwitchInterval * 1000;
 			plugTimer.start();
@@ -156,7 +152,6 @@ App {
 			nextSwitchDate = nextSwitchEvent.getDate() + "/" + month + "/" + nextSwitchEvent.getFullYear();
 			nextSwitchTime = hours + ":" + minutes;
 			message = "Eerstvolgende actie op:";
-
 			console.log("***** Slimme stekker programma gestart:" + (currentSwitchInterval * 1000)  + " ms tot " + nextSwitchDate + " " + nextSwitchTime);
 		}
 	}
@@ -224,12 +219,10 @@ App {
 		}
 	}
 
-	function countPlugs(){
+	function getName(pluguuid) {
 	
-		plugsfound=false
-		plugNamesArray.length = 0; //empty arrays (refresh plug list)
-		plugUuidArray.length = 0;
 		var doc = new XMLHttpRequest();
+		currentSwitchName = "Onbekend";
 		doc.onreadystatechange = function() {
 			if (doc.readyState == XMLHttpRequest.DONE) {
 				var devicesfile = doc.responseText;
@@ -243,12 +236,10 @@ App {
 						var n40 = devices[x0].indexOf('<name>') + 6
 						var n41 = devices[x0].indexOf('</name>',n40)
 						var devicesname = devices[x0].substring(n40, n41)
-
-						plugNamesArray.push(devicesname.trim());
-						plugUuidArray.push(devicesuuid.trim());
-
 						plugsfound=true;
-						determineFirstSwitchmoment();
+
+						if (devicesuuid == pluguuid) currentSwitchName = devicesname;
+
 					}
 				}
 			}
@@ -258,17 +249,35 @@ App {
 		doc.send();
 	}
 
-	function getName(pluguuid){
-		if (plugUuidArray.length > 0) {
-			for (var i=0; i<plugUuidArray.length; i++) {
-				if (plugUuidArray[i]== pluguuid) {
-					return plugNamesArray[i];
-					break;
+	function countPlugs(){
+	
+		plugsfound=false
+		var doc = new XMLHttpRequest();
+		doc.onreadystatechange = function() {
+			if (doc.readyState == XMLHttpRequest.DONE) {
+				var devicesfile = doc.responseText;
+				var devices = devicesfile.split('<device>')
+				for(var x0 = 0;x0 < devices.length;x0++){
+					if((devices[x0].toUpperCase().indexOf('PUMP')>0 & devices[x0].toUpperCase().indexOf('SWITCH')>0) || devices[x0].indexOf('FGWPF102')>0 || devices[x0].indexOf('ZMNHYD1')>0 ||devices[x0].indexOf('FGWP011')>0 ||devices[x0].indexOf('NAS_WR01Z')>0 ||devices[x0].indexOf('NAS_WR01ZE')>0 ||devices[x0].indexOf('NAS_WR02ZE')>0 ||devices[x0].indexOf('EMPOWER')>0 ||devices[x0].indexOf('EM6550_v1')>0) {
+						plugsfound=true;
+					}
+				}
+				if (!plugsfound) {
+					nextSwitchDate = "Geen slimme stekkers"; 
+					currentSwitchName= "gekoppeld aan Toon";
+					currentSwitchAction = "";
+					nextSwitchTime = "";
+					message = "Probleem:"
+				} else {
+					determineFirstSwitchmomentDetails();
 				}
 			}
 		}
-		return "Onbekend"
+		doc.open("GET", "file:////qmf/config/config_happ_smartplug.xml", true);
+		doc.setRequestHeader("Content-Encoding", "UTF-8");
+		doc.send();
 	}
+
 
 	
 	Timer {

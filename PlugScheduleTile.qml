@@ -68,6 +68,6 @@ Tile {
 			pixelSize: qfont.tileTitle
 		}
 		color: (typeof dimmableColors !== 'undefined') ? dimmableColors.waTileTextColor : colors.waTileTextColor
-		text: app.currentSwitchName + " - " + app.currentSwitchAction
+		text: (app.currentSwitchAction.length > 1) ? app.currentSwitchName + " - " + app.currentSwitchAction : app.currentSwitchName
 	}
 }

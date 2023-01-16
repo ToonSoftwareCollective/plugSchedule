@@ -51,7 +51,9 @@ Screen {
 					}
 					if (!app.plugsfound) {
 						app.nextSwitchDate = "Geen slimme stekkers"; 
-						app.nextSwitchTime = "gekoppeld aan Toon";
+						app.currentSwitchName= "gekoppeld aan Toon";
+						app.currentSwitchAction = "";
+						app.nextSwitchTime = "";
 						app.message = "Probleem:"
 						hide();
 					} else { 
@@ -286,13 +288,10 @@ Screen {
 									}
 									if (plugFound) i = plugUuidArray.length;
 								}
-							}			
-								
-							if (plugFound) {
-								app.saveSchedule();
-								loadScreen();
-							}
-	
+							}				
+							if (!plugFound) app.scheduleJson["scheduleitems"][index]["pluguuid"] = plugUuidArray[0];
+							app.saveSchedule();
+							loadScreen();
 						}
 					}
 				}
