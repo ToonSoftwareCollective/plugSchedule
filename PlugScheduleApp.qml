@@ -188,7 +188,7 @@ App {
 		var switchOffInterval = 0;
 		var startday = 0;
 
-		 // calculate SwitchOn interval first
+		 // calculate interval
 
 		jsonTime = scheduleJson["scheduleitems"][index]["starttime"] / 100;
 		jsonHours = Math.floor(jsonTime);
@@ -236,12 +236,34 @@ App {
 						var n40 = devices[x0].indexOf('<name>') + 6
 						var n41 = devices[x0].indexOf('</name>',n40)
 						var devicesname = devices[x0].substring(n40, n41)
-						plugsfound=true;
 
 						if (devicesuuid == pluguuid) currentSwitchName = devicesname;
 
 					}
 				}
+				var doc2 = new XMLHttpRequest();
+				doc2.onreadystatechange = function() {
+					if (doc2.readyState == XMLHttpRequest.DONE) {
+						var devicesfile2 = doc2.responseText;
+						var devices2 = devicesfile2.split('<device>')
+						for(var x0 = 0;x0 < devices2.length;x0++){
+							if (devices2[x0].toUpperCase().indexOf('SWITCHPOWER')>0) {
+								var n20 = devices2[x0].indexOf('<uuid>') + 6
+								var n21 = devices2[x0].indexOf('</uuid>',n20)
+								var devicesuuid = devices2[x0].substring(n20, n21)
+					
+								var n40 = devices2[x0].indexOf('<name>') + 6
+								var n41 = devices2[x0].indexOf('</name>',n40)
+								var devicesname = devices2[x0].substring(n40, n41)
+								if (devicesuuid == pluguuid) currentSwitchName = devicesname;
+								}
+						}
+					}
+				}
+				doc2.open("GET", "file:////qmf/config/config_hdrv_hue.xml", true);
+				doc2.setRequestHeader("Content-Encoding", "UTF-8");
+				doc2.send();
+
 			}
 		}
 		doc.open("GET", "file:////qmf/config/config_happ_smartplug.xml", true);
@@ -262,15 +284,30 @@ App {
 						plugsfound=true;
 					}
 				}
-				if (!plugsfound) {
-					nextSwitchDate = "Geen slimme stekkers"; 
-					currentSwitchName= "gekoppeld aan Toon";
-					currentSwitchAction = "";
-					nextSwitchTime = "";
-					message = "Probleem:"
-				} else {
-					determineFirstSwitchmomentDetails();
+				var doc2 = new XMLHttpRequest();   //check Hue switch devices
+				doc2.onreadystatechange = function() {
+					if (doc2.readyState == XMLHttpRequest.DONE) {
+						var devicesfile2 = doc2.responseText;
+						var devices2 = devicesfile2.split('<device>')
+						for(var x0 = 0;x0 < devices2.length;x0++){
+							if (devices2[x0].toUpperCase().indexOf('SWITCHPOWER')>0) {
+								plugsfound=true;
+							}
+						}
+						if (!plugsfound) {
+							nextSwitchDate = "Geen slimme stekkers"; 
+							currentSwitchName= "gekoppeld aan Toon";
+							currentSwitchAction = "";
+							nextSwitchTime = "";
+							message = "Probleem:"
+						} else {
+							determineFirstSwitchmomentDetails();
+						}
+					}
 				}
+				doc2.open("GET", "file:////qmf/config/config_hdrv_hue.xml", true);
+				doc2.setRequestHeader("Content-Encoding", "UTF-8");
+				doc2.send();
 			}
 		}
 		doc.open("GET", "file:////qmf/config/config_happ_smartplug.xml", true);

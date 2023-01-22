@@ -1,2 +1,5 @@
+1.0.3
+- added Hue devices which can be switch on/off
+
 1.0.2
 - eerste release

@@ -49,16 +49,45 @@ Screen {
 							}
 						}	
 					}
-					if (!app.plugsfound) {
-						app.nextSwitchDate = "Geen slimme stekkers"; 
-						app.currentSwitchName= "gekoppeld aan Toon";
-						app.currentSwitchAction = "";
-						app.nextSwitchTime = "";
-						app.message = "Probleem:"
-						hide();
-					} else { 
-						loadScreen();
+
+					var doc2 = new XMLHttpRequest();
+					doc2.onreadystatechange = function() {
+						if (doc2.readyState == XMLHttpRequest.DONE) {
+							var devicesfile2 = doc2.responseText;
+							var devices2 = devicesfile2.split('<device>')
+							for (var x0 = 0;x0 < devices2.length;x0++){
+								if (devices2[x0].toUpperCase().indexOf('SWITCHPOWER')>0) {
+									var n20 = devices2[x0].indexOf('<uuid>') + 6
+									var n21 = devices2[x0].indexOf('</uuid>',n20)
+									var devicesuuid2 = devices2[x0].substring(n20, n21)
+							
+									var n40 = devices2[x0].indexOf('<name>') + 6
+									var n41 = devices2[x0].indexOf('</name>',n40)
+									var devicesname2 = devices2[x0].substring(n40, n41)
+
+									plugNamesArray.push(devicesname2.trim());
+									plugUuidArray.push(devicesuuid2.trim());
+							
+									if (devicesuuid2.length>5){
+										app.plugsfound=true;
+									}
+								}	
+							}
+							if (!app.plugsfound) {
+								app.nextSwitchDate = "Geen slimme stekkers"; 
+								app.currentSwitchName= "gekoppeld aan Toon";
+								app.currentSwitchAction = "";
+								app.nextSwitchTime = "";
+								app.message = "Probleem:"
+								hide();
+							} else { 
+								loadScreen();
+							}
+						}
 					}
+					doc2.open("GET", "file:////qmf/config/config_hdrv_hue.xml", true);
+					doc2.setRequestHeader("Content-Encoding", "UTF-8");
+					doc2.send();
 				}
 		}
 		doc.open("GET", "file:////qmf/config/config_happ_smartplug.xml", true);
