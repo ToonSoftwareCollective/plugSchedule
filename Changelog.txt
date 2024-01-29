@@ -1,3 +1,7 @@
+1.0.4
+- added integration with the Domoticzboard app (version 1.1.18 onwards)
+  Both domoticz switches as well as connected zwave switches can be controlled.
+
 1.0.3
 - added Hue devices which can be switch on/off
 

@@ -25,14 +25,26 @@ Screen {
 		app.plugsfound=false
 		plugNamesArray.length = 0; //empty arrays (refresh plug list)
 		plugUuidArray.length = 0;
+
+			// add domoticz plugs if present (provided by Domoticzboard app)
+
+		if (app.domoticzPlugs["plugs"].length > 0) {
+			for(var i = 0;i < app.domoticzPlugs["plugs"].length;i++){
+
+				plugNamesArray.push(app.domoticzPlugs["plugs"][i]);
+				plugUuidArray.push("domoticz" + app.domoticzPlugs["plugs"][i]);
+							
+				app.plugsfound=true;
+			}	
+		}
+
 		var doc = new XMLHttpRequest();
 		doc.onreadystatechange = function() {
 				if (doc.readyState == XMLHttpRequest.DONE) {
 					var devicesfile = doc.responseText;
 					var devices = devicesfile.split('<device>')
 					for(var x0 = 0;x0 < devices.length;x0++){
-						if((devices[x0].toUpperCase().indexOf('PUMP')>0 & devices[x0].toUpperCase().indexOf('SWITCH')>0) || devices[x0].indexOf('FGWPF102')>0 || devices[x0].indexOf('ZMNHYD1')>0 ||devices[x0].indexOf('FGWP011')>0 ||devices[x0].indexOf('NAS_WR01Z')>0 ||devices[x0].indexOf('NAS_WR01ZE')>0 ||devices[x0].indexOf('NAS_WR02ZE')>0 ||devices[x0].indexOf('EMPOWER')>0 ||devices[x0].indexOf('EM6550_v1')>0)
-						{
+						if((devices[x0].toUpperCase().indexOf('PUMP')>0 & devices[x0].toUpperCase().indexOf('SWITCH')>0) || devices[x0].indexOf('FGWPF102')>0 || devices[x0].indexOf('ZMNHYD1')>0 ||devices[x0].indexOf('FGWP011')>0 ||devices[x0].indexOf('NAS_WR01Z')>0 ||devices[x0].indexOf('NAS_WR01ZE')>0 ||devices[x0].indexOf('NAS_WR02ZE')>0 ||devices[x0].indexOf('EMPOWER')>0 ||devices[x0].indexOf('EM6550_v1')>0) {
 							var n20 = devices[x0].indexOf('<uuid>') + 6
 							var n21 = devices[x0].indexOf('</uuid>',n20)
 							var devicesuuid = devices[x0].substring(n20, n21)
@@ -40,14 +52,13 @@ Screen {
 							var n40 = devices[x0].indexOf('<name>') + 6
 							var n41 = devices[x0].indexOf('</name>',n40)
 							var devicesname = devices[x0].substring(n40, n41)
-
 							plugNamesArray.push(devicesname.trim());
 							plugUuidArray.push(devicesuuid.trim());
-							
-							if (devicesuuid.length>5){// plugs found
+					
+							if (devicesuuid.length>5){
 								app.plugsfound=true;
 							}
-						}	
+						}
 					}
 
 					var doc2 = new XMLHttpRequest();
@@ -101,6 +112,7 @@ Screen {
 	}
 
 	function getName(pluguuid){
+
 		if (plugUuidArray.length > 0) {
 			for (var i=0; i<plugUuidArray.length; i++) {
 				if (plugUuidArray[i]== pluguuid) {

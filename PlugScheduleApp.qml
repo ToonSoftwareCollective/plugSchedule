@@ -22,6 +22,7 @@ App {
 	property variant switchActionArray : []
 	property variant switchInterval : []
 	property variant switchPlugName : []
+	property variant domoticzPlugs : {"plugs":[]}
 	property variant currentSwitchInterval : 0
 	property string currentSwitchAction
 	property string currentSwitchName
@@ -58,9 +59,22 @@ App {
 		} catch(e) { // file not found, start with empty JSON
 			scheduleJson = JSON.parse('{"scheduleitems":[]}');
 		}
-		countPlugs();
-	}
+        	try{
+            		tscsignals.tscSignal.connect(addDomoticzPlugs);
+        	} catch(e) {
+        	}
 
+		countPlugs();
+
+	}
+	
+	function addDomoticzPlugs(appName, appArguments) {
+		console.log("DomPLug: signal received:" + appName + "-"+ appArguments);
+ 		if (appName == "plugSchedule") {
+			domoticzPlugs = JSON.parse(appArguments);
+			countPlugs();
+		}
+	}
 
 	function init() {
 		registry.registerWidget("tile", tileUrl, this, "plugScheduleTile", {thumbLabel: qsTr("Slimme stekkers"), thumbIcon: thumbnailIcon, thumbCategory: "general", thumbWeight: 30, baseTileWeight: 10, baseTileSolarWeight: 10, thumbIconVAlignment: "center"})
@@ -152,7 +166,6 @@ App {
 			nextSwitchDate = nextSwitchEvent.getDate() + "/" + month + "/" + nextSwitchEvent.getFullYear();
 			nextSwitchTime = hours + ":" + minutes;
 			message = "Eerstvolgende actie op:";
-			console.log("***** Slimme stekker programma gestart:" + (currentSwitchInterval * 1000)  + " ms tot " + nextSwitchDate + " " + nextSwitchTime);
 		}
 	}
 
@@ -163,12 +176,20 @@ App {
 		for (var i=0;i<switchInterval.length;i++) {
 			if (switchInterval[i] == currentSwitchInterval ) {
 
-				var msg = bxtFactory.newBxtMessage(BxtMessage.ACTION_INVOKE, switchUuidArray[i], "SwitchPower", "SetTarget");
-				msg.addArgument("NewTargetValue", switchActionArray[i]);
-				bxtClient.sendMsg(msg);
-				bxtClient.sendMsg(msg); // do it twice because sometimes the plug does not respond
-				console.log("***** slimme stekkerplug " +  switchUuidArray[i] + "gewijzigd naar " + switchActionArray[i]);
+				if (switchUuidArray[i].substring(0,8) == "domoticz") {
+					// send message to domoticzboard to execute
+					try{
+						tscsignals.tscSignal("domoticzboard", '{"name":"' + switchUuidArray[i].substring(8,switchUuidArray[i].length) + '","action":"' + switchActionArray[i] + '"}');
+					} catch(e) {
+					}
 
+				} else {
+						// execute connected zwave plug change
+					var msg = bxtFactory.newBxtMessage(BxtMessage.ACTION_INVOKE, switchUuidArray[i], "SwitchPower", "SetTarget");
+					msg.addArgument("NewTargetValue", switchActionArray[i]);
+					bxtClient.sendMsg(msg);
+					bxtClient.sendMsg(msg); // do it twice because sometimes the plug does not respond
+				}
 			}
 		}
 		determineFirstSwitchmoment();
@@ -223,57 +244,66 @@ App {
 	
 		var doc = new XMLHttpRequest();
 		currentSwitchName = "Onbekend";
-		doc.onreadystatechange = function() {
-			if (doc.readyState == XMLHttpRequest.DONE) {
-				var devicesfile = doc.responseText;
-				var devices = devicesfile.split('<device>')
-				for(var x0 = 0;x0 < devices.length;x0++){
-					if((devices[x0].toUpperCase().indexOf('PUMP')>0 & devices[x0].toUpperCase().indexOf('SWITCH')>0) || devices[x0].indexOf('FGWPF102')>0 || devices[x0].indexOf('ZMNHYD1')>0 ||devices[x0].indexOf('FGWP011')>0 ||devices[x0].indexOf('NAS_WR01Z')>0 ||devices[x0].indexOf('NAS_WR01ZE')>0 ||devices[x0].indexOf('NAS_WR02ZE')>0 ||devices[x0].indexOf('EMPOWER')>0 ||devices[x0].indexOf('EM6550_v1')>0) {
-						var n20 = devices[x0].indexOf('<uuid>') + 6
-						var n21 = devices[x0].indexOf('</uuid>',n20)
-						var devicesuuid = devices[x0].substring(n20, n21)
+
+		if (pluguuid.substring(0,8) == "domoticz") {
+			currentSwitchName = pluguuid.substring(8,pluguuid.length)
+		} else {
+
+			doc.onreadystatechange = function() {
+				if (doc.readyState == XMLHttpRequest.DONE) {
+					var devicesfile = doc.responseText;
+					var devices = devicesfile.split('<device>')
+					for(var x0 = 0;x0 < devices.length;x0++){
+						if((devices[x0].toUpperCase().indexOf('PUMP')>0 & devices[x0].toUpperCase().indexOf('SWITCH')>0) || devices[x0].indexOf('FGWPF102')>0 || devices[x0].indexOf('ZMNHYD1')>0 ||devices[x0].indexOf('FGWP011')>0 ||devices[x0].indexOf('NAS_WR01Z')>0 ||devices[x0].indexOf('NAS_WR01ZE')>0 ||devices[x0].indexOf('NAS_WR02ZE')>0 ||devices[x0].indexOf('EMPOWER')>0 ||devices[x0].indexOf('EM6550_v1')>0) {
+							var n20 = devices[x0].indexOf('<uuid>') + 6
+							var n21 = devices[x0].indexOf('</uuid>',n20)
+							var devicesuuid = devices[x0].substring(n20, n21)
 						
-						var n40 = devices[x0].indexOf('<name>') + 6
-						var n41 = devices[x0].indexOf('</name>',n40)
-						var devicesname = devices[x0].substring(n40, n41)
+							var n40 = devices[x0].indexOf('<name>') + 6
+							var n41 = devices[x0].indexOf('</name>',n40)
+							var devicesname = devices[x0].substring(n40, n41)
+	
+							if (devicesuuid == pluguuid) currentSwitchName = devicesname;
 
-						if (devicesuuid == pluguuid) currentSwitchName = devicesname;
-
-					}
-				}
-				var doc2 = new XMLHttpRequest();
-				doc2.onreadystatechange = function() {
-					if (doc2.readyState == XMLHttpRequest.DONE) {
-						var devicesfile2 = doc2.responseText;
-						var devices2 = devicesfile2.split('<device>')
-						for(var x0 = 0;x0 < devices2.length;x0++){
-							if (devices2[x0].toUpperCase().indexOf('SWITCHPOWER')>0) {
-								var n20 = devices2[x0].indexOf('<uuid>') + 6
-								var n21 = devices2[x0].indexOf('</uuid>',n20)
-								var devicesuuid = devices2[x0].substring(n20, n21)
-					
-								var n40 = devices2[x0].indexOf('<name>') + 6
-								var n41 = devices2[x0].indexOf('</name>',n40)
-								var devicesname = devices2[x0].substring(n40, n41)
-								if (devicesuuid == pluguuid) currentSwitchName = devicesname;
-								}
 						}
 					}
-				}
-				doc2.open("GET", "file:////qmf/config/config_hdrv_hue.xml", true);
-				doc2.setRequestHeader("Content-Encoding", "UTF-8");
-				doc2.send();
+					var doc2 = new XMLHttpRequest();
+					doc2.onreadystatechange = function() {
+						if (doc2.readyState == XMLHttpRequest.DONE) {
+							var devicesfile2 = doc2.responseText;
+							var devices2 = devicesfile2.split('<device>')
+							for(var x0 = 0;x0 < devices2.length;x0++){
+								if (devices2[x0].toUpperCase().indexOf('SWITCHPOWER')>0) {
+									var n20 = devices2[x0].indexOf('<uuid>') + 6
+									var n21 = devices2[x0].indexOf('</uuid>',n20)
+									var devicesuuid = devices2[x0].substring(n20, n21)
+					
+									var n40 = devices2[x0].indexOf('<name>') + 6
+									var n41 = devices2[x0].indexOf('</name>',n40)
+									var devicesname = devices2[x0].substring(n40, n41)
+									if (devicesuuid == pluguuid) currentSwitchName = devicesname;
+								}
+							}
+						}
+					}
+					doc2.open("GET", "file:////qmf/config/config_hdrv_hue.xml", true);
+					doc2.setRequestHeader("Content-Encoding", "UTF-8");
+					doc2.send();
 
+				}
 			}
+			doc.open("GET", "file:////qmf/config/config_happ_smartplug.xml", true);
+			doc.setRequestHeader("Content-Encoding", "UTF-8");
+			doc.send();
 		}
-		doc.open("GET", "file:////qmf/config/config_happ_smartplug.xml", true);
-		doc.setRequestHeader("Content-Encoding", "UTF-8");
-		doc.send();
 	}
 
 	function countPlugs(){
 	
-		plugsfound=false
+		plugsfound=false;
+
+		if (domoticzPlugs["plugs"].length > 0) plugsfound=true;
+
 		var doc = new XMLHttpRequest();
 		doc.onreadystatechange = function() {
 			if (doc.readyState == XMLHttpRequest.DONE) {
@@ -294,6 +324,7 @@ App {
 								plugsfound=true;
 							}
 						}
+
 						if (!plugsfound) {
 							nextSwitchDate = "Geen slimme stekkers"; 
 							currentSwitchName= "gekoppeld aan Toon";
