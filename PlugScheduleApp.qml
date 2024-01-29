@@ -69,7 +69,6 @@ App {
 	}
 	
 	function addDomoticzPlugs(appName, appArguments) {
-		console.log("DomPLug: signal received:" + appName + "-"+ appArguments);
  		if (appName == "plugSchedule") {
 			domoticzPlugs = JSON.parse(appArguments);
 			countPlugs();
